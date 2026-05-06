@@ -46,11 +46,11 @@ const createShortUrl = async (req, res) => {
 
     const newUrl = new Url({
       longUrl: long_url,
-      shortId: shortId || nanoid(6),
+      shortId: shortId,
     });
 
-    await newUrl.save();
-
+   const savedUrl = await newUrl.save();
+   
     res.json({
       success: true,
       message: "Short URL Created 🎉",
