@@ -50,7 +50,13 @@ const createShortUrl = async (req, res) => {
     });
 
     const savedUrl = await newUrl.save();
-
+    if (savedUrl.errors) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create short URL ❌",
+        savedUrl,
+      });
+    }
     res.json({
       success: true,
       message: "Short URL Created 🎉",
