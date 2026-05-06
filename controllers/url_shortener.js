@@ -49,8 +49,8 @@ const createShortUrl = async (req, res) => {
       shortId: shortId,
     });
 
-   const savedUrl = await newUrl.save();
-   
+    const savedUrl = await newUrl.save();
+
     res.json({
       success: true,
       message: "Short URL Created 🎉",
