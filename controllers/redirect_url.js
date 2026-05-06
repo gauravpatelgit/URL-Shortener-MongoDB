@@ -75,7 +75,7 @@ const redirectUrl = async (req, res) => {
     clickQueue
       .add({ shortId, userIp, clicks: 1 })
       .catch((err) => console.log("Queue error:", err.message));
-
+    console.log("📤 Adding job:", shortId, userIp);
     return res.redirect(longUrl);
   } catch (err) {
     console.error("🔥 FULL ERROR:", err);
