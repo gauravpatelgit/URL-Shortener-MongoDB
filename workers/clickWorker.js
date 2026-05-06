@@ -6,80 +6,62 @@ const redis = require("../config/redisClient");
 const connectDB = require("../config/db");
 
 console.log("🚀 Worker started...");
+
 if (mongoose.connection.readyState === 0) {
   connectDB();
 }
 
-// 🔥 Worker start
 clickQueue.process(async (job) => {
   console.log("🔥 Job received:", job.data);
+
   const { shortId, userIp, clicks = 1 } = job.data;
 
-  let geoData;
-  console.log("📦 GEO RAW:", geoData);
+  let geoData = null;
+
   try {
-    // 🔥 Redis cache
+    // 🔥 Redis check
     const cached = await redis.get(userIp);
 
     if (cached) {
       geoData = JSON.parse(cached);
+      console.log("⚡ GEO from cache");
     } else {
-      try {
-        let res1 = await fetch(`https://freeipapi.com/api/json/${userIp}`);
-        let data1 = await res1.json();
+      // 🔥 IP API (single stable source recommended)
+      const res = await fetch(`https://ipwho.is/${userIp}`);
+      const data = await res.json();
 
-        if (data1 && data1.ipAddress) {
-          geoData = {
-            continent: data1.continentName,
-            continent_code: data1.continentCode,
-            country_name: data1.countryName,
-            region: data1.regionName,
-            city: data1.cityName,
-          };
-        } else throw new Error();
-      } catch {
-        try {
-          let res2 = await fetch(`https://ipapi.co/${userIp}/json/`);
-          let data2 = await res2.json();
-
-          if (!data2.error) {
-            geoData = {
-              continent: data2.continent_code,
-              country_name: data2.country_name,
-              region: data2.region,
-              city: data2.city,
-            };
-          } else throw new Error();
-        } catch {
-          let res3 = await fetch(`http://ip-api.com/json/${userIp}`);
-          let data3 = await res3.json();
-
-          if (!geoData) {
-            geoData = {
-              continent: "Unknown",
-              country_name: "Unknown",
-              region: "Unknown",
-              city: "Unknown",
-            };
-          }
-          console.log("🔥 Job received:", job.data);
-          console.log("📦 GEO DATA:", geoData);
-          console.log("🌍 Saving Location...");
-        }
+      if (data && data.success) {
+        geoData = {
+          continent: data.continent || "Unknown",
+          country_name: data.country || "Unknown",
+          region: data.region || "Unknown",
+          city: data.city || "Unknown",
+        };
       }
-
-      // 🔥 Redis save (1 day)
-      await redis.set(userIp, JSON.stringify(geoData), "EX", 86400);
     }
 
-    // 🔥 safe values
-    const continent =
-      geoData?.continent_code || geoData?.continent || "Unknown";
-    const country = geoData?.country_name || "Unknown";
-    const state = geoData?.region || "Unknown";
-    const city = geoData?.city || "Unknown";
+    // 🔥 SAFE fallback
+    if (!geoData) {
+      geoData = {
+        continent: "Unknown",
+        country_name: "Unknown",
+        region: "Unknown",
+        city: "Unknown",
+      };
+    }
 
-    // 🔥 LOCATION
+    console.log("📦 GEO DATA:", geoData);
+
+    // 🔥 Save Redis
+    await redis.set(userIp, JSON.stringify(geoData), "EX", 86400);
+
+    // 🔥 normalize
+    const continent = geoData.continent || "Unknown";
+    const country = geoData.country_name || "Unknown";
+    const state = geoData.region || "Unknown";
+    const city = geoData.city || "Unknown";
+
+    // 🔥 LOCATION SAVE
     const existingLocation = await Location.findOne({
       shortId,
       country,
@@ -101,9 +83,10 @@ clickQueue.process(async (job) => {
         clicks,
       });
     }
-    console.log("🌍 Location saving...");
 
-    // 🔥 TIME
+    console.log("🌍 Location saved");
+
+    // 🔥 TIME SAVE
     const now = new Date();
     const date = now.toLocaleDateString("en-CA");
     const hour = now.getHours();
@@ -125,6 +108,8 @@ clickQueue.process(async (job) => {
         clicks,
       });
     }
+
+    console.log("⏱ Time stats saved");
   } catch (err) {
     console.log("❌ Worker Error:", err.message);
   }
