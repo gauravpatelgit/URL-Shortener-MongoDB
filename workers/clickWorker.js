@@ -4,10 +4,14 @@ const TimeStat = require("../models/time_stat");
 const redis = require("../config/redisClient");
 const connectDB = require("../config/db");
 
-connectDB();
+console.log("🚀 Worker started...");
+if (mongoose.connection.readyState === 0) {
+  connectDB();
+}
 
 // 🔥 Worker start
 clickQueue.process(async (job) => {
+    console.log("🔥 Job received:", job.data);
   const { shortId, userIp, clicks = 1 } = job.data;
 
       let geoData;
