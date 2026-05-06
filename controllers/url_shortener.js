@@ -60,7 +60,7 @@ const createShortUrl = async (req, res) => {
     console.error("🔥 ERROR:", err);
     res.status(500).json({
       success: false,
-      error: err,
+      error: err.message,
       message: "Server error ❌",
     });
   }
