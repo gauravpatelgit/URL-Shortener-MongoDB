@@ -9,15 +9,20 @@ const app = express();
 // ✅ CORS (better using env)
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   }),
 );
 
 app.use(express.json());
 
 // ✅ DB connect
-connectDB();
+connectDB().then(() => {
+  console.log("DB Ready ✅");
+});
+
+require("./workers/clickWorker");
 
 // ✅ routes
 app.use("/", urlRoutes);
