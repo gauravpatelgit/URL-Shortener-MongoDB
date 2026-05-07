@@ -16,6 +16,8 @@ const clickCounter = async (req, res) => {
     // 🔥 FIND URL
     // ==============================
 
+    const mongoose = require("mongoose");
+
     const urlData = await Url.findOne({ shortId });
 
     if (!urlData) {
@@ -25,7 +27,7 @@ const clickCounter = async (req, res) => {
       });
     }
 
-    const urlId = urlData._id;
+    const urlId = new mongoose.Types.ObjectId(urlData._id);
 
     // ==============================
     // 🇮🇳 INDIA TIME
@@ -90,7 +92,6 @@ const clickCounter = async (req, res) => {
     // ==============================
     // 🔥 DAY (last 10 days)
     // ==============================
-
     else if (type === "day") {
       const days = [];
 
@@ -127,7 +128,6 @@ const clickCounter = async (req, res) => {
     // ==============================
     // 🔥 WEEKLY (last 10 weeks)
     // ==============================
-
     else if (type === "weekly") {
       const weeks = [];
 
@@ -153,8 +153,7 @@ const clickCounter = async (req, res) => {
 
         rawData.forEach((r) => {
           const diff =
-            (new Date(weekStart) - new Date(r.date)) /
-            (1000 * 60 * 60 * 24);
+            (new Date(weekStart) - new Date(r.date)) / (1000 * 60 * 60 * 24);
 
           if (diff >= 0 && diff < 7) {
             total += r.clicks;
@@ -171,7 +170,6 @@ const clickCounter = async (req, res) => {
     // ==============================
     // 🔥 MONTHLY (last 10 months)
     // ==============================
-
     else if (type === "monthly") {
       const months = [];
 
@@ -181,9 +179,7 @@ const clickCounter = async (req, res) => {
         d.setMonth(now.getMonth() - i);
 
         const key =
-          d.getFullYear() +
-          "-" +
-          String(d.getMonth() + 1).padStart(2, "0");
+          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 
         months.push(key);
       }
