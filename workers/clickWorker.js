@@ -7,12 +7,12 @@ const connectDB = require("../config/db");
 
 console.log("🚀 Worker started...");
 
-redis;
-
+// 🔥 DB CONNECT
 if (mongoose.connection.readyState === 0) {
   connectDB();
 }
 
+// 🔥 WORKER
 clickQueue.process(async (job) => {
   console.log("🔥 Job received:", job.data);
 
@@ -21,21 +21,40 @@ clickQueue.process(async (job) => {
   let geoData = null;
 
   try {
-    // 🔥 Redis check
+    // ==============================
+    // 🔥 REMOVE OLD CACHE
+    // ==============================
+
     await redis.del(userIp);
+
+    // ==============================
+    // 🔥 REDIS CHECK
+    // ==============================
 
     const cached = await redis.get(userIp);
 
     if (cached) {
       geoData = JSON.parse(cached);
+
       console.log("⚡ GEO from cache");
     } else {
+      // ==============================
+      // 🌍 GEO API
+      // ==============================
+
       const res = await fetch(`http://ip-api.com/json/${userIp}`);
+
       const data = await res.json();
+
+      console.log("🌍 API RESPONSE:", data);
+
+      // ==============================
+      // ✅ SUCCESS
+      // ==============================
 
       if (data && data.status === "success") {
         geoData = {
-          continent: data.continent || "Unknown",
+          continent: data.continent || "Asia",
           country_name: data.country || "Unknown",
           region: data.regionName || "Unknown",
           city: data.city || "Unknown",
@@ -43,8 +62,9 @@ clickQueue.process(async (job) => {
       }
     }
 
-    console.log("📦 GEO DATA111:", geoData);
-    // 🔥 fallback
+    // ==============================
+    // 🔥 FALLBACK
+    // ==============================
 
     if (!geoData) {
       geoData = {
@@ -55,15 +75,24 @@ clickQueue.process(async (job) => {
       };
     }
 
-    console.log("📦 GEO DATA22:", geoData);
+    console.log("📦 FINAL GEO DATA:", geoData);
 
-    // 🔥 Save Redis
+    // ==============================
+    // 🔥 SAVE REDIS
+    // ==============================
+
     await redis.set(userIp, JSON.stringify(geoData), "EX", 86400);
 
-    // 🔥 normalize
+    // ==============================
+    // 🔥 NORMALIZE
+    // ==============================
+
     const continent = geoData.continent || "Unknown";
+
     const country = geoData.country_name || "Unknown";
+
     const state = geoData.region || "Unknown";
+
     const city = geoData.city || "Unknown";
 
     // ==============================
@@ -72,14 +101,15 @@ clickQueue.process(async (job) => {
 
     const existingLocation = await Location.findOne({
       urlId,
+      continent,
       country,
       state,
       city,
-      continent,
     });
 
     if (existingLocation) {
       existingLocation.clicks += clicks;
+
       await existingLocation.save();
     } else {
       await Location.create({
@@ -95,7 +125,7 @@ clickQueue.process(async (job) => {
     console.log("🌍 Location saved");
 
     // ==============================
-    // ⏱ TIME SAVE
+    // ⏱ INDIA TIME
     // ==============================
 
     const now = new Date(
@@ -105,7 +135,12 @@ clickQueue.process(async (job) => {
     );
 
     const date = now.toLocaleDateString("en-CA");
+
     const hour = now.getHours();
+
+    // ==============================
+    // ⏱ TIME SAVE
+    // ==============================
 
     const existingTime = await TimeStat.findOne({
       urlId,
@@ -115,6 +150,7 @@ clickQueue.process(async (job) => {
 
     if (existingTime) {
       existingTime.clicks += clicks;
+
       await existingTime.save();
     } else {
       await TimeStat.create({
