@@ -31,7 +31,7 @@ clickQueue.process(async (job) => {
 
       if (data && data.success) {
         geoData = {
-          continent_code: data.continent || "Unknown",
+          continent: data.continent || "Unknown",
           country_name: data.country || "Unknown",
           region: data.region || "Unknown",
           city: data.city || "Unknown",
@@ -42,7 +42,7 @@ clickQueue.process(async (job) => {
     // 🔥 fallback
     if (!geoData) {
       geoData = {
-        continent_code: "Unknown",
+        continent: "Unknown",
         country_name: "Unknown",
         region: "Unknown",
         city: "Unknown",
@@ -95,7 +95,7 @@ clickQueue.process(async (job) => {
     const now = new Date(
       new Date().toLocaleString("en-US", {
         timeZone: "Asia/Kolkata",
-      })
+      }),
     );
 
     const date = now.toLocaleDateString("en-CA");
