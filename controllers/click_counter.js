@@ -4,12 +4,17 @@ const Location = require("../models/location");
 
 const clickCounter = async (req, res) => {
   console.log("🔥 CLICK COUNTER HIT");
+
   try {
     const { shortId } = req.params;
     const { type } = req.query;
 
     console.log("shortId:", shortId);
     console.log("type:", type);
+
+    // ==============================
+    // 🔥 FIND URL
+    // ==============================
 
     const urlData = await Url.findOne({ shortId });
 
@@ -22,17 +27,30 @@ const clickCounter = async (req, res) => {
 
     const urlId = urlData._id;
 
-    const now = new Date();
+    // ==============================
+    // 🇮🇳 INDIA TIME
+    // ==============================
+
+    const now = new Date(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata",
+      }),
+    );
+
+    console.log("🇮🇳 INDIA TIME:", now);
+
     let timeData = [];
 
     // ==============================
     // 🔥 HOUR (last 10 hours)
     // ==============================
+
     if (type === "hour") {
       const hours = [];
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setHours(now.getHours() - i);
 
         const date =
@@ -47,16 +65,21 @@ const clickCounter = async (req, res) => {
         hours.push({ date, hour });
       }
 
+      console.log("🕒 HOURS:", hours);
+
       const rawData = await TimeStat.find({
         urlId,
         $or: hours,
       });
 
-      // 🔥 missing hours = 0 fill
+      console.log("📦 RAW TIME DATA:", rawData);
+
+      // fill missing hours with 0
       timeData = hours.map((h) => {
         const found = rawData.find(
           (r) => r.date === h.date && r.hour === h.hour,
         );
+
         return {
           label: h.hour + ":00",
           clicks: found ? found.clicks : 0,
@@ -67,11 +90,13 @@ const clickCounter = async (req, res) => {
     // ==============================
     // 🔥 DAY (last 10 days)
     // ==============================
+
     else if (type === "day") {
       const days = [];
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setDate(now.getDate() - i);
 
         const date =
@@ -91,6 +116,7 @@ const clickCounter = async (req, res) => {
 
       timeData = days.map((d) => {
         const found = rawData.find((r) => r.date === d);
+
         return {
           label: d,
           clicks: found ? found.clicks : 0,
@@ -101,11 +127,13 @@ const clickCounter = async (req, res) => {
     // ==============================
     // 🔥 WEEKLY (last 10 weeks)
     // ==============================
+
     else if (type === "weekly") {
       const weeks = [];
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setDate(now.getDate() - i * 7);
 
         const weekStart =
@@ -125,7 +153,8 @@ const clickCounter = async (req, res) => {
 
         rawData.forEach((r) => {
           const diff =
-            (new Date(weekStart) - new Date(r.date)) / (1000 * 60 * 60 * 24);
+            (new Date(weekStart) - new Date(r.date)) /
+            (1000 * 60 * 60 * 24);
 
           if (diff >= 0 && diff < 7) {
             total += r.clicks;
@@ -142,15 +171,19 @@ const clickCounter = async (req, res) => {
     // ==============================
     // 🔥 MONTHLY (last 10 months)
     // ==============================
+
     else if (type === "monthly") {
       const months = [];
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setMonth(now.getMonth() - i);
 
         const key =
-          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0");
 
         months.push(key);
       }
@@ -161,7 +194,8 @@ const clickCounter = async (req, res) => {
         let total = 0;
 
         rawData.forEach((r) => {
-          const month = r.date.slice(0, 7); // YYYY-MM
+          const month = r.date.slice(0, 7);
+
           if (month === m) {
             total += r.clicks;
           }
@@ -175,9 +209,14 @@ const clickCounter = async (req, res) => {
     }
 
     // ==============================
-    // 🔥 LOCATION DATA
+    // 🌍 LOCATION DATA
     // ==============================
+
     const locationData = await Location.find({ urlId });
+
+    // ==============================
+    // ✅ RESPONSE
+    // ==============================
 
     res.json({
       success: true,
@@ -185,7 +224,8 @@ const clickCounter = async (req, res) => {
       locationData,
     });
   } catch (err) {
-    console.error(err);
+    console.error("❌ CLICK COUNTER ERROR:", err);
+
     res.status(500).json({
       success: false,
       message: "Server error ❌",
@@ -193,4 +233,6 @@ const clickCounter = async (req, res) => {
   }
 };
 
-module.exports = { clickCounter };
+module.exports = {
+  clickCounter,
+};
