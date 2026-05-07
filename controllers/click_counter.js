@@ -3,15 +3,23 @@ const TimeStat = require("../models/time_stat");
 const Location = require("../models/location");
 
 const clickCounter = async (req, res) => {
-    
-    
-console.log("🔥 CLICK COUNTER HIT");
+  console.log("🔥 CLICK COUNTER HIT");
+
   try {
     const { shortId } = req.params;
     const { type } = req.query;
 
     console.log("shortId:", shortId);
     console.log("type:", type);
+
+    // ✅ India Timezone
+    const now = new Date(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata",
+      }),
+    );
+
+    console.log("India Time:", now);
 
     const urlData = await Url.findOne({ shortId });
 
@@ -22,7 +30,6 @@ console.log("🔥 CLICK COUNTER HIT");
       });
     }
 
-    const now = new Date();
     let timeData = [];
 
     // ==============================
@@ -33,6 +40,7 @@ console.log("🔥 CLICK COUNTER HIT");
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setHours(now.getHours() - i);
 
         const date =
@@ -52,11 +60,11 @@ console.log("🔥 CLICK COUNTER HIT");
         $or: hours,
       });
 
-      // 🔥 missing hours = 0 fill
       timeData = hours.map((h) => {
         const found = rawData.find(
-          (r) => r.date === h.date && r.hour === h.hour
+          (r) => r.date === h.date && r.hour === h.hour,
         );
+
         return {
           label: h.hour + ":00",
           clicks: found ? found.clicks : 0,
@@ -72,6 +80,7 @@ console.log("🔥 CLICK COUNTER HIT");
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setDate(now.getDate() - i);
 
         const date =
@@ -91,6 +100,7 @@ console.log("🔥 CLICK COUNTER HIT");
 
       timeData = days.map((d) => {
         const found = rawData.find((r) => r.date === d);
+
         return {
           label: d,
           clicks: found ? found.clicks : 0,
@@ -106,6 +116,7 @@ console.log("🔥 CLICK COUNTER HIT");
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setDate(now.getDate() - i * 7);
 
         const weekStart =
@@ -118,15 +129,16 @@ console.log("🔥 CLICK COUNTER HIT");
         weeks.push(weekStart);
       }
 
-      const rawData = await TimeStat.find({ shortId });
+      const rawData = await TimeStat.find({
+        shortId,
+      });
 
       timeData = weeks.map((weekStart) => {
         let total = 0;
 
         rawData.forEach((r) => {
           const diff =
-            (new Date(weekStart) - new Date(r.date)) /
-            (1000 * 60 * 60 * 24);
+            (new Date(weekStart) - new Date(r.date)) / (1000 * 60 * 60 * 24);
 
           if (diff >= 0 && diff < 7) {
             total += r.clicks;
@@ -148,23 +160,25 @@ console.log("🔥 CLICK COUNTER HIT");
 
       for (let i = 9; i >= 0; i--) {
         const d = new Date(now);
+
         d.setMonth(now.getMonth() - i);
 
         const key =
-          d.getFullYear() +
-          "-" +
-          String(d.getMonth() + 1).padStart(2, "0");
+          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 
         months.push(key);
       }
 
-      const rawData = await TimeStat.find({ shortId });
+      const rawData = await TimeStat.find({
+        shortId,
+      });
 
       timeData = months.map((m) => {
         let total = 0;
 
         rawData.forEach((r) => {
-          const month = r.date.slice(0, 7); // YYYY-MM
+          const month = r.date.slice(0, 7);
+
           if (month === m) {
             total += r.clicks;
           }
@@ -180,16 +194,18 @@ console.log("🔥 CLICK COUNTER HIT");
     // ==============================
     // 🔥 LOCATION DATA
     // ==============================
-    const locationData = await Location.find({ shortId });
+    const locationData = await Location.find({
+      shortId,
+    });
 
     res.json({
       success: true,
       timeData,
       locationData,
     });
-
   } catch (err) {
     console.error(err);
+
     res.status(500).json({
       success: false,
       message: "Server error ❌",
@@ -197,4 +213,6 @@ console.log("🔥 CLICK COUNTER HIT");
   }
 };
 
-module.exports = { clickCounter };
+module.exports = {
+  clickCounter,
+};
