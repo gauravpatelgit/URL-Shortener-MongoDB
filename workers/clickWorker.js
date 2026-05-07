@@ -21,25 +21,25 @@ clickQueue.process(async (job) => {
   let geoData = null;
 
   try {
-    // // 🔥 Redis check
-    // const cached = await redis.get(userIp);
+    // 🔥 Redis check
+    const cached = await redis.get(userIp);
 
-    // if (cached) {
-    //   geoData = JSON.parse(cached);
-    //   console.log("⚡ GEO from cache");
-    // } else {
-    const res = await fetch(`https://ipwho.is/${userIp}`);
-    const data = await res.json();
+    if (cached) {
+      geoData = JSON.parse(cached);
+      console.log("⚡ GEO from cache");
+    } else {
+      const res = await fetch(`http://ip-api.com/json/${userIp}`);
+      const data = await res.json();
 
-    if (data && data.success) {
-      geoData = {
-        continent: data.continent || "Unknown",
-        country_name: data.country || "Unknown",
-        region: data.region || "Unknown",
-        city: data.city || "Unknown",
-      };
+      if (data && data.success) {
+        geoData = {
+          continent: data.continent || "Unknown",
+          country_name: data.country || "Unknown",
+          region: data.region || "Unknown",
+          city: data.city || "Unknown",
+        };
+      }
     }
-    // }
 
     console.log("📦 GEO DATA111:", geoData);
     // 🔥 fallback
