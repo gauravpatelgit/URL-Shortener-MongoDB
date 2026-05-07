@@ -48,18 +48,34 @@ const redirectUrl = async (req, res) => {
       });
     }
     // 🔥 IP logic (same रहेगा)
-    const ipArray = [
-      "8.8.8.8",
-      "1.1.1.1",
-      "142.250.183.14",
-      "13.107.21.200",
-      "151.101.1.69",
-      "172.217.167.78",
-      "23.216.146.45",
-      "104.16.132.229",
-      "185.199.108.153",
-      "52.95.110.1",
-    ];
+    let userIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket.remoteAddress ||
+      "";
+
+    // 🔥 localhost / ipv6 fix
+    if (
+      userIp === "::1" ||
+      userIp === "127.0.0.1" ||
+      userIp.includes("::ffff:127.0.0.1")
+    ) {
+      const ipArray = [
+        "8.8.8.8",
+        "1.1.1.1",
+        "142.250.183.14",
+        "13.107.21.200",
+        "151.101.1.69",
+        "172.217.167.78",
+        "23.216.146.45",
+        "104.16.132.229",
+        "185.199.108.153",
+        "52.95.110.1",
+      ];
+
+      userIp = ipArray[Math.floor(Math.random() * ipArray.length)];
+    }
+
+    console.log("🌍 USER IP:", userIp);
 
     const randomIp = ipArray[Math.floor(Math.random() * ipArray.length)];
 
