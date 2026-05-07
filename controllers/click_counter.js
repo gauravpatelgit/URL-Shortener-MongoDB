@@ -16,8 +16,6 @@ const clickCounter = async (req, res) => {
     // 🔥 FIND URL
     // ==============================
 
-    const mongoose = require("mongoose");
-
     const urlData = await Url.findOne({ shortId });
 
     if (!urlData) {
@@ -27,7 +25,7 @@ const clickCounter = async (req, res) => {
       });
     }
 
-    const urlId = new mongoose.Types.ObjectId(urlData._id);
+    const urlId = urlData._id;
 
     // ==============================
     // 🇮🇳 INDIA TIME
@@ -39,12 +37,10 @@ const clickCounter = async (req, res) => {
       }),
     );
 
-    console.log("🇮🇳 INDIA TIME:", now);
-
     let timeData = [];
 
     // ==============================
-    // 🔥 HOUR (last 10 hours)
+    // 🔥 HOUR
     // ==============================
 
     if (type === "hour") {
@@ -67,8 +63,6 @@ const clickCounter = async (req, res) => {
         hours.push({ date, hour });
       }
 
-      console.log("🕒 HOURS:", hours);
-
       const rawData = await TimeStat.find({
         urlId,
         $or: hours,
@@ -76,7 +70,6 @@ const clickCounter = async (req, res) => {
 
       console.log("📦 RAW TIME DATA:", rawData);
 
-      // fill missing hours with 0
       timeData = hours.map((h) => {
         const found = rawData.find(
           (r) => r.date === h.date && r.hour === h.hour,
@@ -90,8 +83,9 @@ const clickCounter = async (req, res) => {
     }
 
     // ==============================
-    // 🔥 DAY (last 10 days)
+    // 🔥 DAY
     // ==============================
+
     else if (type === "day") {
       const days = [];
 
@@ -126,8 +120,9 @@ const clickCounter = async (req, res) => {
     }
 
     // ==============================
-    // 🔥 WEEKLY (last 10 weeks)
+    // 🔥 WEEKLY
     // ==============================
+
     else if (type === "weekly") {
       const weeks = [];
 
@@ -153,7 +148,8 @@ const clickCounter = async (req, res) => {
 
         rawData.forEach((r) => {
           const diff =
-            (new Date(weekStart) - new Date(r.date)) / (1000 * 60 * 60 * 24);
+            (new Date(weekStart) - new Date(r.date)) /
+            (1000 * 60 * 60 * 24);
 
           if (diff >= 0 && diff < 7) {
             total += r.clicks;
@@ -168,8 +164,9 @@ const clickCounter = async (req, res) => {
     }
 
     // ==============================
-    // 🔥 MONTHLY (last 10 months)
+    // 🔥 MONTHLY
     // ==============================
+
     else if (type === "monthly") {
       const months = [];
 
@@ -179,7 +176,9 @@ const clickCounter = async (req, res) => {
         d.setMonth(now.getMonth() - i);
 
         const key =
-          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0");
 
         months.push(key);
       }
