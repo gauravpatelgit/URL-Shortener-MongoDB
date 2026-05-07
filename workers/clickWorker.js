@@ -6,7 +6,9 @@ const redis = require("../config/redisClient");
 const connectDB = require("../config/db");
 
 console.log("🚀 Worker started...");
-
+redis.flushAll()
+  .then(() => console.log("✅ Redis cleared"))
+  .catch(console.error);
 if (mongoose.connection.readyState === 0) {
   connectDB();
 }
