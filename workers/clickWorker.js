@@ -31,7 +31,7 @@ clickQueue.process(async (job) => {
 
       if (data && data.success) {
         geoData = {
-          continent: data.continent || "Unknown",
+          continent_code: data.continent || "Unknown",
           country_name: data.country || "Unknown",
           region: data.region || "Unknown",
           city: data.city || "Unknown",
@@ -42,7 +42,7 @@ clickQueue.process(async (job) => {
     // 🔥 fallback
     if (!geoData) {
       geoData = {
-        continent: "Unknown",
+        continent_code: "Unknown",
         country_name: "Unknown",
         region: "Unknown",
         city: "Unknown",
