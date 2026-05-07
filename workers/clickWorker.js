@@ -7,9 +7,8 @@ const connectDB = require("../config/db");
 
 console.log("🚀 Worker started...");
 
-  redis.flushall()
-  .then(() => console.log("✅ Redis cleared"))
-  .catch(console.error);
+redis
+ 
 if (mongoose.connection.readyState === 0) {
   connectDB();
 }
@@ -44,12 +43,14 @@ clickQueue.process(async (job) => {
 
     // 🔥 fallback
     if (!geoData) {
-      geoData = {
-        continent: data.continent_code || "Unknown",
-        country_name: data.country || "Unknown",
-        region: data.region || "Unknown",
-        city: data.city || "Unknown",
-      };
+      if (!geoData) {
+        geoData = {
+          continent: "Unknown",
+          country_name: "Unknown",
+          region: "Unknown",
+          city: "Unknown",
+        };
+      }
     }
 
     console.log("📦 GEO DATA:", geoData);
