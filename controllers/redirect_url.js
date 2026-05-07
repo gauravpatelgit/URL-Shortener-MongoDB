@@ -7,22 +7,35 @@ const redirectUrl = async (req, res) => {
     const { shortId } = req.params;
 
     let longUrl;
+    let urlData;
 
-    // 🔥 Redis GET safe
-    let cachedUrl = null;
+    // ==============================
+    // 🔥 REDIS GET
+    // ==============================
+
     try {
-      cachedUrl = await redis.get(`url:${shortId}`);
+      const cachedUrl = await redis.get(`url:${shortId}`);
+
+      if (cachedUrl) {
+        console.log("⚡ Cache hit:", shortId);
+
+        longUrl = cachedUrl;
+
+        // urlData still needed for _id
+        urlData = await Url.findOne({ shortId });
+      }
     } catch (err) {
       console.log("Redis GET error:", err.message);
     }
 
-    if (cachedUrl) {
-      console.log("⚡ Cache hit:", shortId);
-      longUrl = cachedUrl;
-    } else {
+    // ==============================
+    // 🌐 DB CALL
+    // ==============================
+
+    if (!longUrl) {
       console.log("🌐 DB call:", shortId);
 
-      const urlData = await Url.findOne({ shortId });
+      urlData = await Url.findOne({ shortId });
 
       if (!urlData) {
         return res.status(404).json({
@@ -33,7 +46,6 @@ const redirectUrl = async (req, res) => {
 
       longUrl = urlData.longUrl;
 
-      // 🔥 Redis SET safe
       try {
         await redis.set(`url:${shortId}`, longUrl, "EX", 86400);
       } catch (err) {
@@ -47,13 +59,17 @@ const redirectUrl = async (req, res) => {
         message: "URL missing ❌",
       });
     }
-    // 🔥 IP logic (same रहेगा)
+
+    // ==============================
+    // 🌍 USER IP
+    // ==============================
+
     let userIp =
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket.remoteAddress ||
       "";
 
-    // 🔥 localhost / ipv6 fix
+    // localhost testing
     if (
       userIp === "::1" ||
       userIp === "127.0.0.1" ||
@@ -77,28 +93,25 @@ const redirectUrl = async (req, res) => {
 
     console.log("🌍 USER IP:", userIp);
 
-    const randomIp = ipArray[Math.floor(Math.random() * ipArray.length)];
+    // ==============================
+    // 🔥 QUEUE
+    // ==============================
 
-    let userIp =
-      req.headers["x-forwarded-for"]?.split(",")[0] ||
-      req.socket.remoteAddress ||
-      randomIp;
-
-    if (userIp === "::1" || userIp === "127.0.0.1") {
-      userIp = randomIp;
-    }
-    // 🔥 Queue
     clickQueue
       .add({
         urlId: urlData._id,
         userIp,
         clicks: 1,
       })
-      .then(() => console.log("📤 Job added successfully:", shortId, userIp))
+      .then(() =>
+        console.log("📤 Job added successfully:", urlData._id, userIp)
+      )
       .catch((err) => console.log("Queue error:", err.message));
+
     return res.redirect(longUrl);
   } catch (err) {
     console.error("🔥 FULL ERROR:", err);
+
     res.status(500).json({
       success: false,
       message: "Server error ❌",

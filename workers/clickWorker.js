@@ -26,7 +26,6 @@ clickQueue.process(async (job) => {
       geoData = JSON.parse(cached);
       console.log("⚡ GEO from cache");
     } else {
-      // 🔥 IP API (single stable source recommended)
       const res = await fetch(`https://ipwho.is/${userIp}`);
       const data = await res.json();
 
@@ -40,7 +39,7 @@ clickQueue.process(async (job) => {
       }
     }
 
-    // 🔥 SAFE fallback
+    // 🔥 fallback
     if (!geoData) {
       geoData = {
         continent: "Unknown",
@@ -61,7 +60,10 @@ clickQueue.process(async (job) => {
     const state = geoData.region || "Unknown";
     const city = geoData.city || "Unknown";
 
-    // 🔥 LOCATION SAVE
+    // ==============================
+    // 🌍 LOCATION SAVE
+    // ==============================
+
     const existingLocation = await Location.findOne({
       urlId,
       country,
@@ -86,8 +88,16 @@ clickQueue.process(async (job) => {
 
     console.log("🌍 Location saved");
 
-    // 🔥 TIME SAVE
-    const now = new Date();
+    // ==============================
+    // ⏱ TIME SAVE
+    // ==============================
+
+    const now = new Date(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Kolkata",
+      })
+    );
+
     const date = now.toLocaleDateString("en-CA");
     const hour = now.getHours();
 
