@@ -7,8 +7,8 @@ const connectDB = require("../config/db");
 
 console.log("🚀 Worker started...");
 
-redis
- 
+redis;
+
 if (mongoose.connection.readyState === 0) {
   connectDB();
 }
@@ -41,8 +41,9 @@ clickQueue.process(async (job) => {
       }
     }
 
+    console.log("📦 GEO DATA111:", geoData);
     // 🔥 fallback
-    if (!geoData) {
+    
       if (!geoData) {
         geoData = {
           continent: "Unknown",
@@ -51,9 +52,9 @@ clickQueue.process(async (job) => {
           city: "Unknown",
         };
       }
-    }
+    
 
-    console.log("📦 GEO DATA:", geoData);
+    console.log("📦 GEO DATA22:", geoData);
 
     // 🔥 Save Redis
     await redis.set(userIp, JSON.stringify(geoData), "EX", 86400);
