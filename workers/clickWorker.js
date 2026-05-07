@@ -43,16 +43,15 @@ clickQueue.process(async (job) => {
 
     console.log("📦 GEO DATA111:", geoData);
     // 🔥 fallback
-    
-      if (!geoData) {
-        geoData = {
-          continent: "Unknown",
-          country_name: "Unknown",
-          region: "Unknown",
-          city: "Unknown",
-        };
-      }
-    
+
+    if (!geoData) {
+      geoData = {
+        continent: "Unknown",
+        country_name: "Unknown",
+        region: "Unknown",
+        city: "Unknown",
+      };
+    }
 
     console.log("📦 GEO DATA22:", geoData);
 
