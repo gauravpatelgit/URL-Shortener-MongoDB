@@ -3,9 +3,7 @@ const TimeStat = require("../models/time_stat");
 const Location = require("../models/location");
 
 const clickCounter = async (req, res) => {
-    
-    
-console.log("🔥 CLICK COUNTER HIT");
+  console.log("🔥 CLICK COUNTER HIT");
   try {
     const { shortId } = req.params;
     const { type } = req.query;
@@ -21,6 +19,8 @@ console.log("🔥 CLICK COUNTER HIT");
         message: "URL not found ❌",
       });
     }
+
+    const urlId = urlData._id;
 
     const now = new Date();
     let timeData = [];
@@ -48,14 +48,14 @@ console.log("🔥 CLICK COUNTER HIT");
       }
 
       const rawData = await TimeStat.find({
-        shortId,
+        urlId,
         $or: hours,
       });
 
       // 🔥 missing hours = 0 fill
       timeData = hours.map((h) => {
         const found = rawData.find(
-          (r) => r.date === h.date && r.hour === h.hour
+          (r) => r.date === h.date && r.hour === h.hour,
         );
         return {
           label: h.hour + ":00",
@@ -85,7 +85,7 @@ console.log("🔥 CLICK COUNTER HIT");
       }
 
       const rawData = await TimeStat.find({
-        shortId,
+        urlId,
         date: { $in: days },
       });
 
@@ -118,15 +118,14 @@ console.log("🔥 CLICK COUNTER HIT");
         weeks.push(weekStart);
       }
 
-      const rawData = await TimeStat.find({ shortId });
+      const rawData = await TimeStat.find({ urlId });
 
       timeData = weeks.map((weekStart) => {
         let total = 0;
 
         rawData.forEach((r) => {
           const diff =
-            (new Date(weekStart) - new Date(r.date)) /
-            (1000 * 60 * 60 * 24);
+            (new Date(weekStart) - new Date(r.date)) / (1000 * 60 * 60 * 24);
 
           if (diff >= 0 && diff < 7) {
             total += r.clicks;
@@ -151,14 +150,12 @@ console.log("🔥 CLICK COUNTER HIT");
         d.setMonth(now.getMonth() - i);
 
         const key =
-          d.getFullYear() +
-          "-" +
-          String(d.getMonth() + 1).padStart(2, "0");
+          d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
 
         months.push(key);
       }
 
-      const rawData = await TimeStat.find({ shortId });
+      const rawData = await TimeStat.find({ urlId });
 
       timeData = months.map((m) => {
         let total = 0;
@@ -180,14 +177,13 @@ console.log("🔥 CLICK COUNTER HIT");
     // ==============================
     // 🔥 LOCATION DATA
     // ==============================
-    const locationData = await Location.find({ shortId });
+    const locationData = await Location.find({ urlId });
 
     res.json({
       success: true,
       timeData,
       locationData,
     });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({

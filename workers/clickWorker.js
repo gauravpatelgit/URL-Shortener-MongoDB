@@ -14,7 +14,7 @@ if (mongoose.connection.readyState === 0) {
 clickQueue.process(async (job) => {
   console.log("🔥 Job received:", job.data);
 
-  const { shortId, userIp, clicks = 1 } = job.data;
+  const { urlId, userIp, clicks = 1 } = job.data;
 
   let geoData = null;
 
@@ -63,7 +63,7 @@ clickQueue.process(async (job) => {
 
     // 🔥 LOCATION SAVE
     const existingLocation = await Location.findOne({
-      shortId,
+      urlId,
       country,
       state,
       city,
@@ -75,7 +75,7 @@ clickQueue.process(async (job) => {
       await existingLocation.save();
     } else {
       await Location.create({
-        shortId,
+        urlId,
         continent,
         country,
         state,
@@ -92,7 +92,7 @@ clickQueue.process(async (job) => {
     const hour = now.getHours();
 
     const existingTime = await TimeStat.findOne({
-      shortId,
+      urlId,
       date,
       hour,
     });
@@ -102,7 +102,7 @@ clickQueue.process(async (job) => {
       await existingTime.save();
     } else {
       await TimeStat.create({
-        shortId,
+        urlId,
         date,
         hour,
         clicks,

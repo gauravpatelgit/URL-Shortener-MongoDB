@@ -89,7 +89,11 @@ const redirectUrl = async (req, res) => {
     }
     // 🔥 Queue
     clickQueue
-      .add({ shortId, userIp, clicks: 1 })
+      .add({
+        urlId: urlData._id,
+        userIp,
+        clicks: 1,
+      })
       .then(() => console.log("📤 Job added successfully:", shortId, userIp))
       .catch((err) => console.log("Queue error:", err.message));
     return res.redirect(longUrl);
