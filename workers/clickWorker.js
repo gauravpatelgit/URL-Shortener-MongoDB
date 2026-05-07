@@ -22,6 +22,8 @@ clickQueue.process(async (job) => {
 
   try {
     // 🔥 Redis check
+    await redis.del(userIp);
+
     const cached = await redis.get(userIp);
 
     if (cached) {
@@ -31,11 +33,11 @@ clickQueue.process(async (job) => {
       const res = await fetch(`http://ip-api.com/json/${userIp}`);
       const data = await res.json();
 
-      if (data && data.success) {
+      if (data && data.status === "success") {
         geoData = {
           continent: data.continent || "Unknown",
           country_name: data.country || "Unknown",
-          region: data.region || "Unknown",
+          region: data.regionName || "Unknown",
           city: data.city || "Unknown",
         };
       }
