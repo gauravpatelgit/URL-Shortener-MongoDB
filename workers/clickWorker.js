@@ -7,105 +7,253 @@ const connectDB = require("../config/db");
 
 console.log("🚀 Worker started...");
 
+// =========================================
 // 🔥 DB CONNECT
+// =========================================
+
 if (mongoose.connection.readyState === 0) {
   connectDB();
 }
 
-// 🔥 WORKER
-clickQueue.process(async (job) => {
-  console.log("🔥 Job received:", job.data);
+// =========================================
+// 🌍 GEO FETCH FUNCTION
+// =========================================
 
-  const { urlId, userIp, clicks = 1 } = job.data;
-
-  let geoData = null;
-
+async function getGeoData(userIp) {
   try {
-    // ==============================
-    // 🔥 REMOVE OLD CACHE
-    // ==============================
-
-    await redis.del(userIp);
-
-    // ==============================
+    // =========================================
     // 🔥 REDIS CHECK
-    // ==============================
+    // =========================================
 
     const cached = await redis.get(userIp);
 
     if (cached) {
-      geoData = JSON.parse(cached);
-
       console.log("⚡ GEO from cache");
-    } else {
-      // ==============================
-      // 🌍 GEO API
-      // ==============================
 
-      const res = await fetch(`http://ip-api.com/json/${userIp}`);
+      return JSON.parse(cached);
+    }
 
-      const data = await res.json();
+    // =========================================
+    // 🌍 ALL APIs
+    // =========================================
 
-      console.log("🌍 API RESPONSE:", data);
+    const apis = [
+      // =========================================
+      // API 1 -> ipapi.co
+      // =========================================
 
-      // ==============================
-      // ✅ SUCCESS
-      // ==============================
+      async () => {
+        const res = await fetch(
+          `https://ipapi.co/${userIp}/json/`,
+        );
 
-      if (data && data.status === "success") {
-        geoData = {
-          continent: data.continent || "Asia",
-          country_name: data.country || "Unknown",
-          region: data.regionName || "Unknown",
-          city: data.city || "Unknown",
+        const data = await res.json();
+
+        return {
+          continent: data.continent_code,
+          country: data.country_name,
+          state: data.region,
+          city: data.city,
+          provider: "ipapi.co",
         };
+      },
+
+      // =========================================
+      // API 2 -> ipwho.is
+      // =========================================
+
+      async () => {
+        const res = await fetch(
+          `https://ipwho.is/${userIp}`,
+        );
+
+        const data = await res.json();
+
+        return {
+          continent: data.continent,
+          country: data.country,
+          state: data.region,
+          city: data.city,
+          provider: "ipwho.is",
+        };
+      },
+
+      // =========================================
+      // API 3 -> ip-api.com
+      // =========================================
+
+      async () => {
+        const res = await fetch(
+          `http://ip-api.com/json/${userIp}`,
+        );
+
+        const data = await res.json();
+
+        return {
+          continent: data.continent,
+          country: data.country,
+          state: data.regionName,
+          city: data.city,
+          provider: "ip-api.com",
+        };
+      },
+
+      // =========================================
+      // API 4 -> freeipapi.com
+      // =========================================
+
+      async () => {
+        const res = await fetch(
+          `https://freeipapi.com/api/json/${userIp}`,
+        );
+
+        const data = await res.json();
+
+        return {
+          continent: data.continent,
+          country: data.countryName,
+          state: data.regionName,
+          city: data.cityName,
+          provider: "freeipapi.com",
+        };
+      },
+    ];
+
+    // =========================================
+    // 🎲 RANDOM API
+    // =========================================
+
+    const randomIndex = Math.floor(
+      Math.random() * apis.length,
+    );
+
+    console.log(
+      `🎲 Using API Index: ${randomIndex}`,
+    );
+
+    let geoData = null;
+
+    // =========================================
+    // 🔥 TRY RANDOM API
+    // =========================================
+
+    try {
+      geoData = await apis[randomIndex]();
+
+      console.log(
+        `✅ Provider Used: ${geoData.provider}`,
+      );
+    } catch (err) {
+      console.log(
+        "❌ Random API failed:",
+        err.message,
+      );
+
+      // =========================================
+      // 🔥 BACKUP API
+      // =========================================
+
+      const backupIndex =
+        (randomIndex + 1) % apis.length;
+
+      try {
+        geoData = await apis[backupIndex]();
+
+        console.log(
+          `✅ Backup Provider Used: ${geoData.provider}`,
+        );
+      } catch (backupErr) {
+        console.log(
+          "❌ Backup API failed:",
+          backupErr.message,
+        );
       }
     }
 
-    // ==============================
+    // =========================================
     // 🔥 FALLBACK
-    // ==============================
+    // =========================================
 
     if (!geoData) {
       geoData = {
         continent: "Unknown",
-        country_name: "Unknown",
-        region: "Unknown",
+        country: "Unknown",
+        state: "Unknown",
         city: "Unknown",
       };
     }
 
-    console.log("📦 FINAL GEO DATA:", geoData);
-
-    // ==============================
-    // 🔥 SAVE REDIS
-    // ==============================
-
-    await redis.set(userIp, JSON.stringify(geoData), "EX", 86400);
-
-    // ==============================
+    // =========================================
     // 🔥 NORMALIZE
-    // ==============================
+    // =========================================
 
-    const continent = geoData.continent || "Unknown";
+    geoData = {
+      continent:
+        geoData.continent || "Unknown",
+      country: geoData.country || "Unknown",
+      state: geoData.state || "Unknown",
+      city: geoData.city || "Unknown",
+    };
 
-    const country = geoData.country_name || "Unknown";
+    console.log("📦 FINAL GEO:", geoData);
 
-    const state = geoData.region || "Unknown";
+    // =========================================
+    // 🔥 SAVE CACHE
+    // =========================================
 
-    const city = geoData.city || "Unknown";
+    await redis.set(
+      userIp,
+      JSON.stringify(geoData),
+      "EX",
+      86400,
+    );
 
-    // ==============================
+    return geoData;
+  } catch (err) {
+    console.log("❌ GEO ERROR:", err.message);
+
+    return {
+      continent: "Unknown",
+      country: "Unknown",
+      state: "Unknown",
+      city: "Unknown",
+    };
+  }
+}
+
+// =========================================
+// 🔥 WORKER
+// =========================================
+
+clickQueue.process(async (job) => {
+  console.log("🔥 Job received:", job.data);
+
+  try {
+    const { urlId, userIp, clicks = 1 } = job.data;
+
+    // =========================================
+    // 🌍 GET GEO
+    // =========================================
+
+    const geoData = await getGeoData(userIp);
+
+    const continent = geoData.continent;
+    const country = geoData.country;
+    const state = geoData.state;
+    const city = geoData.city;
+
+    // =========================================
     // 🌍 LOCATION SAVE
-    // ==============================
+    // =========================================
 
-    const existingLocation = await Location.findOne({
-      urlId,
-      continent,
-      country,
-      state,
-      city,
-    });
+    const existingLocation =
+      await Location.findOne({
+        urlId,
+        continent,
+        country,
+        state,
+        city,
+      });
 
     if (existingLocation) {
       existingLocation.clicks += clicks;
@@ -124,9 +272,9 @@ clickQueue.process(async (job) => {
 
     console.log("🌍 Location saved");
 
-    // ==============================
+    // =========================================
     // ⏱ INDIA TIME
-    // ==============================
+    // =========================================
 
     const now = new Date(
       new Date().toLocaleString("en-US", {
@@ -138,9 +286,9 @@ clickQueue.process(async (job) => {
 
     const hour = now.getHours();
 
-    // ==============================
+    // =========================================
     // ⏱ TIME SAVE
-    // ==============================
+    // =========================================
 
     const existingTime = await TimeStat.findOne({
       urlId,
