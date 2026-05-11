@@ -9,7 +9,12 @@ const app = express();
 // ✅ CORS (better using env)
 app.use(
   cors({
-    origin: [process.env.FRONTEND_local_URL, process.env.FRONTEND_PROD_URL],
+    origin: [
+      process.env.FRONTEND_local_URL,
+      process.env.FRONTEND_PROD_URL,
+      process.env.FRONTEND_PROD_URL_2,
+      process.env.FRONTEND_PROD_URL_3,
+    ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }),
