@@ -43,9 +43,7 @@ async function getGeoData(userIp) {
       // =========================================
 
       async () => {
-        const res = await fetch(
-          `https://ipapi.co/${userIp}/json/`,
-        );
+        const res = await fetch(`https://ipapi.co/${userIp}/json/`);
 
         const data = await res.json();
 
@@ -63,9 +61,7 @@ async function getGeoData(userIp) {
       // =========================================
 
       async () => {
-        const res = await fetch(
-          `https://ipwho.is/${userIp}`,
-        );
+        const res = await fetch(`https://ipwho.is/${userIp}`);
 
         const data = await res.json();
 
@@ -83,9 +79,7 @@ async function getGeoData(userIp) {
       // =========================================
 
       async () => {
-        const res = await fetch(
-          `http://ip-api.com/json/${userIp}`,
-        );
+        const res = await fetch(`http://ip-api.com/json/${userIp}`);
 
         const data = await res.json();
 
@@ -103,9 +97,7 @@ async function getGeoData(userIp) {
       // =========================================
 
       async () => {
-        const res = await fetch(
-          `https://freeipapi.com/api/json/${userIp}`,
-        );
+        const res = await fetch(`https://freeipapi.com/api/json/${userIp}`);
 
         const data = await res.json();
 
@@ -123,13 +115,9 @@ async function getGeoData(userIp) {
     // 🎲 RANDOM API
     // =========================================
 
-    const randomIndex = Math.floor(
-      Math.random() * apis.length,
-    );
+    const randomIndex = Math.floor(Math.random() * apis.length);
 
-    console.log(
-      `🎲 Using API Index: ${randomIndex}`,
-    );
+    console.log(`🎲 Using API Index: ${randomIndex}`);
 
     let geoData = null;
 
@@ -140,33 +128,22 @@ async function getGeoData(userIp) {
     try {
       geoData = await apis[randomIndex]();
 
-      console.log(
-        `✅ Provider Used: ${geoData.provider}`,
-      );
+      console.log(`✅ Provider Used: ${geoData.provider}`);
     } catch (err) {
-      console.log(
-        "❌ Random API failed:",
-        err.message,
-      );
+      console.log("❌ Random API failed:", err.message);
 
       // =========================================
       // 🔥 BACKUP API
       // =========================================
 
-      const backupIndex =
-        (randomIndex + 1) % apis.length;
+      const backupIndex = (randomIndex + 1) % apis.length;
 
       try {
         geoData = await apis[backupIndex]();
 
-        console.log(
-          `✅ Backup Provider Used: ${geoData.provider}`,
-        );
+        console.log(`✅ Backup Provider Used: ${geoData.provider}`);
       } catch (backupErr) {
-        console.log(
-          "❌ Backup API failed:",
-          backupErr.message,
-        );
+        console.log("❌ Backup API failed:", backupErr.message);
       }
     }
 
@@ -188,8 +165,7 @@ async function getGeoData(userIp) {
     // =========================================
 
     geoData = {
-      continent:
-        geoData.continent || "Unknown",
+      continent: geoData.continent || "Unknown",
       country: geoData.country || "Unknown",
       state: geoData.state || "Unknown",
       city: geoData.city || "Unknown",
@@ -201,12 +177,7 @@ async function getGeoData(userIp) {
     // 🔥 SAVE CACHE
     // =========================================
 
-    await redis.set(
-      userIp,
-      JSON.stringify(geoData),
-      "EX",
-      86400,
-    );
+    await redis.set(userIp, JSON.stringify(geoData), "EX", 86400);
 
     return geoData;
   } catch (err) {
@@ -246,14 +217,13 @@ clickQueue.process(async (job) => {
     // 🌍 LOCATION SAVE
     // =========================================
 
-    const existingLocation =
-      await Location.findOne({
-        urlId,
-        continent,
-        country,
-        state,
-        city,
-      });
+    const existingLocation = await Location.findOne({
+      urlId,
+      continent,
+      country,
+      state,
+      city,
+    });
 
     if (existingLocation) {
       existingLocation.clicks += clicks;
